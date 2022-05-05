@@ -1,7 +1,6 @@
 package org.apache.matrix.analyze
 
 import org.apache.matrix.MatrixSqlSession
-import org.apache.matrix.datasourceV2.clickhouse.ClickhouseDataSourceOptions
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions.AttributeReference
@@ -9,7 +8,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.execution.datasources.v2.DataSourceV2Relation
-import org.apache.spark.sql.sources.v2.{DataSourceOptions, DataSourceV2, ReadSupport}
+import org.apache.spark.sql.sources.v2.{DataSourceOptions, ReadSupport}
 
 import scala.collection.JavaConverters._
 

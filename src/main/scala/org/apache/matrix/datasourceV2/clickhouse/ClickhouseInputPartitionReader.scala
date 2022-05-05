@@ -4,6 +4,7 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.GenericInternalRow
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
+import org.apache.spark.sql.sources.Filter
 import org.apache.spark.sql.sources.v2.reader.InputPartitionReader
 import org.apache.spark.sql.types.{DataTypes, StructType}
 import org.apache.spark.unsafe.types.UTF8String
@@ -11,7 +12,11 @@ import ru.yandex.clickhouse.{ClickHouseConnection, ClickHouseStatement, Clickhou
 
 import java.sql.{ResultSet, SQLException}
 
-class ClickhouseInputPartitionReader(schema: StructType, options: ClickhouseDataSourceOptions, url: String) extends Logging with InputPartitionReader[InternalRow]{
+class ClickhouseInputPartitionReader(schema: StructType,
+                                     options: ClickhouseDataSourceOptions,
+                                     url: String,
+                                     pushedFilter: Array[Filter])
+  extends Logging with InputPartitionReader[InternalRow]{
 
   val manager = new ClickhouseManager(options)
   var connection: ClickHouseConnection = null
@@ -22,7 +27,8 @@ class ClickhouseInputPartitionReader(schema: StructType, options: ClickhouseData
     if (null == connection || connection.isClosed && null == st || st.isClosed && null == rs || rs.isClosed){
       connection = manager.getConnection(ClickhouseJdbcUrlParser.JDBC_CLICKHOUSE_PREFIX + "//" +url)
       st = connection.createStatement()
-      val sql = manager.getSelectStatement(schema)
+      val sql = manager.getSelectStatement(schema, pushedFilter)
+      println("query sql: " + sql)
       rs = st.executeQuery(sql)
     }
     if(null != rs && !rs.isClosed) rs.next() else false
@@ -57,5 +63,7 @@ class ClickhouseInputPartitionReader(schema: StructType, options: ClickhouseData
     new GenericInternalRow(record)
   }
 
-  override def close(): Unit = {manager.closeAll(connection, st, null, rs)}
+  override def close(): Unit = {
+    manager.closeAll(connection, st, null, rs)
+  }
 }

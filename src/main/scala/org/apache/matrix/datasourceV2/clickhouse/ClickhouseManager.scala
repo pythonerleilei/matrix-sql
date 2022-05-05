@@ -1,6 +1,9 @@
 package org.apache.matrix.datasourceV2.clickhouse
 
 import org.apache.spark.internal.Logging
+import org.apache.spark.sql.catalyst.expressions.EqualTo
+import org.apache.spark.sql.jdbc.JdbcDialects
+import org.apache.spark.sql.sources.{Filter, GreaterThan, IsNotNull}
 import org.apache.spark.sql.types.{DataTypes, StructField, StructType}
 import org.javatuples.Triplet
 import ru.yandex.clickhouse.domain.ClickHouseDataType
@@ -19,6 +22,20 @@ class ClickhouseManager(options: ClickhouseDataSourceOptions) extends Logging wi
     ds.getConnection(options.getUser, options.getPassword)
   }
 
+  def getSelectStatement(schema: StructType, pushedFilter: Array[Filter]):String = {
+    val selected = if(schema == null || schema.isEmpty) "*" else schema.fieldNames.mkString(",")
+    if(pushedFilter == null || pushedFilter.isEmpty){
+      s"SELECT $selected FROM ${options.getFullTable}"
+    }else {
+      val filter = pushedFilter.map{
+        case f: EqualTo => f.sql
+        case GreaterThan(attr, value) => s"$attr = ${value.toString}"
+        case IsNotNull(attr) => s"$attr is not null"
+      }.mkString(" AND ")
+      s"SELECT $selected FROM ${options.getFullTable} where $filter"
+    }
+  }
+
   def getSparkTableSchema(customFields: java.util.LinkedList[String] = null): StructType = {
     val customSchema: String = options.getCustomSchema
     val customFields = if (customSchema != null && !customSchema.isEmpty) {
@@ -27,20 +44,15 @@ class ClickhouseManager(options: ClickhouseDataSourceOptions) extends Logging wi
       Nil
     }
     val schemaInfo = getTableSchema(customFields)
-    var fields = ArrayBuffer[StructField]()
+    val fields = ArrayBuffer[StructField]()
     for(si <- schemaInfo) {
       fields += StructField(si.getValue0, getSparkSqlType(si.getValue1))
     }
     StructType(fields)
   }
 
-
-  def getSelectStatement(schema: StructType):String = {
-    s"SELECT ${schema.fieldNames.mkString(",")} FROM ${options.getFullTable}"
-  }
-
-  def getTableSchema(customFields: Seq[String] = null): Seq[Triplet[String, String, String]] = {
-    var fields = new java.util.LinkedList[Triplet[String, String, String]]
+  private def getTableSchema(customFields: Seq[String] = null): Seq[Triplet[String, String, String]] = {
+    val fields = new java.util.LinkedList[Triplet[String, String, String]]
     var connection: ClickHouseConnection = null
     var st: ClickHouseStatement = null
     var rs: ClickHouseResultSet = null

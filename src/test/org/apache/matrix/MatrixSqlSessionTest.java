@@ -41,9 +41,10 @@ public class MatrixSqlSessionTest {
 
     @Test
     public void sqlDataSource() {
-        String sqlText = "select * from `clickhouse.ck1.system`.settings";
+        String sqlText = "select name, value from `clickhouse.ck1.system`.settings where value > 10000 as t; " +
+                "select * from t limit 5";
         Dataset<Row> dataset = matrixSqlSession.run(sqlText);
         System.out.println(dataset.queryExecution().analyzed().treeString());
-        dataset.show(5);
+        dataset.show();
     }
 }
