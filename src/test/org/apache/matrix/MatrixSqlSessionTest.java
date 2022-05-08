@@ -22,6 +22,7 @@ public class MatrixSqlSessionTest {
         SparkSession sparkSession = SparkSession.builder()
                 .master("local[1]")
                 .config("spark.runSqlDataSourceV2", true)
+                .config("enable.push.down.agg", true)
                 .withExtensions(new DataSourceV2Extension())
                 .getOrCreate();
 
@@ -41,10 +42,11 @@ public class MatrixSqlSessionTest {
 
     @Test
     public void sqlDataSource() {
-        String sqlText = "select name, value from `clickhouse.ck1.system`.settings where value > 10000 as t; " +
+        String sqlText = "select max(age) from `clickhouse.ck1.test`.people where age > 18 as t; " +
                 "select * from t limit 5";
         Dataset<Row> dataset = matrixSqlSession.run(sqlText);
         System.out.println(dataset.queryExecution().analyzed().treeString());
+        System.out.println(dataset.queryExecution().executedPlan().treeString());
         dataset.show();
     }
 }

@@ -1,7 +1,9 @@
 package org.apache.matrix.datasourceV2.clickhouse
 
+import org.apache.matrix.support.Max
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.catalyst.expressions.EqualTo
+import org.apache.spark.sql.catalyst.expressions.{EqualTo, NamedExpression}
+import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.sources.{Filter, GreaterThan, IsNotNull}
 import org.apache.spark.sql.types.{DataTypes, StructField, StructType}
@@ -22,21 +24,22 @@ class ClickhouseManager(options: ClickhouseDataSourceOptions) extends Logging wi
     ds.getConnection(options.getUser, options.getPassword)
   }
 
-  def getSelectStatement(schema: StructType, pushedFilter: Array[Filter]):String = {
+  def getSelectStatement(schema: StructType,
+                         pushedFilter: Array[Filter]):String = {
     val selected = if(schema == null || schema.isEmpty) "*" else schema.fieldNames.mkString(",")
     if(pushedFilter == null || pushedFilter.isEmpty){
       s"SELECT $selected FROM ${options.getFullTable}"
     }else {
       val filter = pushedFilter.map{
         case f: EqualTo => f.sql
-        case GreaterThan(attr, value) => s"$attr = ${value.toString}"
+        case GreaterThan(attr, value) => s"$attr > ${value.toString}"
         case IsNotNull(attr) => s"$attr is not null"
       }.mkString(" AND ")
       s"SELECT $selected FROM ${options.getFullTable} where $filter"
     }
   }
 
-  def getSparkTableSchema(customFields: java.util.LinkedList[String] = null): StructType = {
+  def getSparkTableSchema(): StructType = {
     val customSchema: String = options.getCustomSchema
     val customFields = if (customSchema != null && !customSchema.isEmpty) {
       customSchema.split(".").toSeq
