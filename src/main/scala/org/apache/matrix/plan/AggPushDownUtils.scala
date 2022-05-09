@@ -234,7 +234,7 @@ object AggPushDownUtils extends Logging{
 
   def translateAggregateFunc(aggregateFunction: AggregateFunction): Array[support.AggregateFunc] = aggregateFunction match {
     case aggregate.Max(child) => child match {
-      case NamedExpression(name, _) => Array(support.Max(name))
+      case NamedExpression(name, dataType) => Array(support.Max(name, dataType))
       case _ =>
         logWarning(s"Unexpected child of aggregate.Max: ${child}")
         Array.empty

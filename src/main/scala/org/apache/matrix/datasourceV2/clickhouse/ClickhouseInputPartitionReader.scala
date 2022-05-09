@@ -15,7 +15,8 @@ import java.sql.{ResultSet, SQLException}
 class ClickhouseInputPartitionReader(schema: StructType,
                                      options: ClickhouseDataSourceOptions,
                                      url: String,
-                                     pushedFilter: Array[Filter])
+                                     pushedFilter: Array[Filter],
+                                     groupingColumns: Array[String])
   extends Logging with InputPartitionReader[InternalRow]{
 
   val manager = new ClickhouseManager(options)
@@ -27,7 +28,7 @@ class ClickhouseInputPartitionReader(schema: StructType,
     if (null == connection || connection.isClosed && null == st || st.isClosed && null == rs || rs.isClosed){
       connection = manager.getConnection(ClickhouseJdbcUrlParser.JDBC_CLICKHOUSE_PREFIX + "//" +url)
       st = connection.createStatement()
-      val sql = manager.getSelectStatement(schema, pushedFilter)
+      val sql = manager.getSelectStatement(schema, pushedFilter, groupingColumns)
       println("query sql: " + sql)
       rs = st.executeQuery(sql)
     }

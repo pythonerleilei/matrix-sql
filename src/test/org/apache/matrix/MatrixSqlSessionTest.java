@@ -42,7 +42,7 @@ public class MatrixSqlSessionTest {
 
     @Test
     public void sqlDataSource() {
-        String sqlText = "select max(age) from `clickhouse.ck1.test`.people where age > 18 as t; " +
+        String sqlText = "select name, max(age) from `clickhouse.ck1.test`.people where age > 20 group by name as t; " +
                 "select * from t limit 5";
         Dataset<Row> dataset = matrixSqlSession.run(sqlText);
         System.out.println(dataset.queryExecution().analyzed().treeString());

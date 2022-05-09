@@ -21,6 +21,7 @@ class ClickhouseDataSourceReader(options: ClickhouseDataSourceOptions)
   }
 
   private val supportedFilters: ArrayBuffer[Filter] = ArrayBuffer()
+  private var groupingColumns: Array[String] = Array()
 
   override def readSchema(): StructType = schema
 
@@ -29,7 +30,7 @@ class ClickhouseDataSourceReader(options: ClickhouseDataSourceOptions)
     if(urls.isEmpty){
       throw new RuntimeException("url is empty")
     }
-    urls.map(url => new ClickhouseInputPartition(schema, options, url, supportedFilters.toArray))
+    urls.map(url => new ClickhouseInputPartition(schema, options, url, supportedFilters.toArray, groupingColumns))
   }
 
   override def pruneColumns(requiredSchema: StructType): Unit = {
@@ -60,9 +61,10 @@ class ClickhouseDataSourceReader(options: ClickhouseDataSourceOptions)
     supportedFilters ++= filters
     var fields = groupingAttributes.map(g => StructField(g.name, g.dataType, g.nullable, g.metadata))
     fields ++= aggregateFunctions.map{
-      case Max(column) => StructField(s"max($column)", DataTypes.IntegerType)
+      case Max(column, dataType) => StructField(s"max($column)", dataType)
     }
     schema = StructType(fields)
+    groupingColumns = groupingAttributes.map(_.name).toArray
   }
 
   override def unhandledFilters(filters: Array[Filter]): Array[Filter] = {

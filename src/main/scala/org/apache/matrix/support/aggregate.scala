@@ -26,9 +26,9 @@ case class CountStar() extends AggregateFunc
 /**
  * The result type of Max must be same with the column type
  */
-case class Max(column: String) extends AggregateFunc
+case class Max(column: String, dataType: DataType) extends AggregateFunc
 
 /**
  * The result type of Min must be same with the column type
  */
-case class Min(column: String) extends AggregateFunc
+case class Min(column: String, dataType: DataType) extends AggregateFunc

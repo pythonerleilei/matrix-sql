@@ -8,11 +8,12 @@ import org.apache.spark.sql.types.StructType
 class ClickhouseInputPartition(schema: StructType,
                                options: ClickhouseDataSourceOptions,
                                url: String,
-                               pushedFilters: Array[Filter])
+                               pushedFilters: Array[Filter],
+                               groupingColumns: Array[String])
   extends InputPartition[InternalRow]{
 
   override def createPartitionReader(): InputPartitionReader[InternalRow] = {
-    new ClickhouseInputPartitionReader(schema, options, url, pushedFilters)
+    new ClickhouseInputPartitionReader(schema, options, url, pushedFilters, groupingColumns)
   }
 
 }

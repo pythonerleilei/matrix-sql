@@ -25,18 +25,22 @@ class ClickhouseManager(options: ClickhouseDataSourceOptions) extends Logging wi
   }
 
   def getSelectStatement(schema: StructType,
-                         pushedFilter: Array[Filter]):String = {
-    val selected = if(schema == null || schema.isEmpty) "*" else schema.fieldNames.mkString(",")
-    if(pushedFilter == null || pushedFilter.isEmpty){
-      s"SELECT $selected FROM ${options.getFullTable}"
-    }else {
+                         pushedFilter: Array[Filter],
+                         groupingColumns: Array[String]):String = {
+    val selected = if(schema == null || schema.isEmpty) "*" else schema.fieldNames.mkString(" ,")
+    var sql = s"SELECT $selected FROM ${options.getFullTable}"
+    if(pushedFilter != null && pushedFilter.nonEmpty){
       val filter = pushedFilter.map{
         case f: EqualTo => f.sql
         case GreaterThan(attr, value) => s"$attr > ${value.toString}"
         case IsNotNull(attr) => s"$attr is not null"
       }.mkString(" AND ")
-      s"SELECT $selected FROM ${options.getFullTable} where $filter"
+      sql = sql + s" where $filter"
     }
+    if(groupingColumns != null && groupingColumns.nonEmpty){
+      sql = sql + s" group by ${groupingColumns.mkString(" ,")}"
+    }
+    sql
   }
 
   def getSparkTableSchema(): StructType = {
